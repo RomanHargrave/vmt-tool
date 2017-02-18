@@ -1,0 +1,11 @@
+cflags = -I. 
+c_compiler = gcc
+
+rule cc
+    command = $c_compiler $cflags -c $in -o $out
+
+rule ccld
+    command = $c_compiler $cflags $in -o $out
+
+build vmt-dumper.o: cc vmt-dumper.c
+build vmt-dumper: ccld vmt-dumper.o
