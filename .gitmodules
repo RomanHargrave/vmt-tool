@@ -1,0 +1,3 @@
+[submodule "gchashmap"]
+	path = gchashmap
+	url = https://github.com/Kijewski/generic-c-hashmap.git
