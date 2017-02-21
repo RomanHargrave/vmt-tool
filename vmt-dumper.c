@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <stddef.h>
 
+
+
 // ELF Header (0x7F E L F)
 const uint8_t ELF_MAGIC[] = {ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3};
 

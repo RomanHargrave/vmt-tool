@@ -7,5 +7,7 @@ rule cc
 rule ccld
     command = $c_compiler $cflags $in -o $out
 
-build vmt-dumper.o: cc vmt-dumper.c
-build vmt-dumper: ccld vmt-dumper.o
+build vmt-dumper.o: cc vmt-dumper.c 
+build elf_sym.o: cc elf_sym.c 
+
+build vmt-dumper: ccld vmt-dumper.o elf_sym.o
