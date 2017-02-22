@@ -4,6 +4,26 @@
 
 #include <stdio.h>
 
+static inline void
+_ESym_DumpSym(ESym_Symbol* sym)
+{
+    fprintf(stderr, "ESym_Symbol(%p) {\n",   sym);
+    fprintf(stderr, "   .elfVersion=%u\n",  sym->elfVersion);
+    fprintf(stderr, "   .elfSym_NN=ElfN_Sym(%p) {\n", _macro_ESym_GetElfPtr(sym));
+    fprintf(stderr, "       .st_name=%lX\n",    ESym_ElfProp(sym, st_name));
+    fprintf(stderr, "       .st_value=%lX\n",   ESym_ElfProp(sym, st_value));
+    fprintf(stderr, "       .st_size=%lu\n",    ESym_ElfProp(sym, st_size));
+    fprintf(stderr, "       .st_info=%X\n",     ESym_ElfProp(sym, st_info));
+    fprintf(stderr, "       .st_other=%X\n",    ESym_ElfProp(sym, st_other));
+    fprintf(stderr, "       .st_shndx=%X\n",    ESym_ElfProp(sym, st_shndx));
+    fprintf(stderr, "   };\n");
+    fprintf(stderr, "   .name=%s\n",        sym->name);
+    fprintf(stderr, "   .destination=%p\n", sym->destination);
+    fprintf(stderr, "   .definition=%lX\n", sym->definition);
+    fprintf(stderr, "   .size=%lu\n",       sym->size);
+    fprintf(stderr, "};\n");
+}
+
 // Handle destructor
 
 void
@@ -259,17 +279,15 @@ ESym_LoadObject(void* region)
     handle->byAddr = malloc(sizeof(ESym_Map_AddrToSymbol));
     ESym_Map_AddrToSymbolNew(handle->byAddr);
 
+    uint64_t collisionCount = 0;
     _macro_ESym_ForEachSymbol(symbols, sym) 
     {
 
         // Add Name->Sym 
         {
             ESym_Symbol* inserted = sym;
-            switch (ESym_Map_NameToSymbolPut(handle->byName, &inserted, HMDR_FIND))
+            switch (ESym_Map_NameToSymbolPut(handle->byName, &inserted, HMDR_STACK))
             {
-                case HMPR_FOUND:
-                    fprintf(stderr, "Collision! NameToSymbol sym=%p occupant=%p\n", sym, inserted);
-                    goto fail;
                 case HMPR_FAILED:
                     fprintf(stderr, "Unable update hashmap (HMPR_FAILED - memory?)\n");
                     goto fail;
@@ -283,15 +301,21 @@ ESym_LoadObject(void* region)
             switch (ESym_Map_AddrToSymbolPut(handle->byAddr, &inserted, HMDR_FIND))
             {
                 case HMPR_FOUND:
-                    fprintf(stderr, "Collision! AddrToSymbol sym=%p occupant=%p\n", sym, inserted);
-                    goto fail;
+                    ++collisionCount;
+                    break;
                 case HMPR_FAILED:
                     fprintf(stderr, "Unable update hashmap (HMPR_FAILED - memory?)\n");
                     goto fail;
                 default:
                     break;
             }
+
         }
+    }
+
+    if (collisionCount > 0)
+    {
+        fprintf(stderr, "%lu symbols share addresses - symbol resolution may not be accurate\n", collisionCount);
     }
 
     return handle;
@@ -301,7 +325,7 @@ fail:
     return NULL;
 }
 
-ESym_Symbol*
+ESym_Symbol const*
 ESym_GetSymbolByName(ESym_Handle* handle, char const* name)
 {
     ESym_Symbol* mockSymbol = malloc(sizeof(ESym_Symbol));

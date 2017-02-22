@@ -1,4 +1,4 @@
-cflags = -I. 
+cflags = -I.  -ggdb3 
 c_compiler = gcc
 
 rule cc

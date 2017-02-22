@@ -43,15 +43,13 @@ ESym_Symbol;
  */
 static inline uint64_t 
 ESym_StringHash(char const* str) { 
-    uint64_t hash = 0;
-
-    if (str == NULL) return 0; // Will this even happen?
+    uint64_t hash = 1125899906842597L; // it's a really big prime
 
     register char swp = 0;
     while (swp = *str++)
     {
-        hash = swp + (hash << 6) + (hash << 16) - hash;
-    }
+        hash = (31 * hash) + swp;
+    } 
 
     return hash;
 }
@@ -60,8 +58,12 @@ ESym_StringHash(char const* str) {
     for(ESym_Symbol* _m_name = _m_symbols; _m_name->elfVersion != EV_INVALID; ++_m_name)
 
 // XXX This is terrible
-#define _macro_ESym_ToELF(sym) \
-    (sym->elfVersion == EV_32 ? sym->elfSym_32 : sym->elfSym_64)
+#define _macro_ESym_GetElfPtr(sym) \
+    (sym->elfVersion == EV_32 ? (void*) sym->elfSym_32 : (void*) sym->elfSym_64)
+
+// XXX hack to deal with ELF disparity
+#define ESym_ElfProp(sym, prop) \
+    (sym->elfVersion == EV_32 ? sym->elfSym_32->prop : sym->elfSym_64->prop)
 
 // XXX entries are pairs containing the address or name and the ELF entry pointer for the symbol 
 DEFINE_HASHMAP(ESym_Map_NameToSymbol, ESym_Symbol);
@@ -69,7 +71,7 @@ DEFINE_HASHMAP(ESym_Map_AddrToSymbol, ESym_Symbol);
 
 typedef struct _s_ESym_Handle
 {
-    ESym_Symbol*            symbols
+    ESym_Symbol*            symbols;
     ESym_Map_NameToSymbol*  byName;
     ESym_Map_AddrToSymbol*  byAddr;
 }
